@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"log"
 )
 
 const dbPath string = "./simple.db"
@@ -162,33 +163,40 @@ func (s MonitoringService) MakeRequest(cfg urlConfiguration, ch chan<- response)
 
 		ts := start.UTC()
 
-		resp, _ := http.Get(cfg.url)
+		resp, err := http.Get(cfg.url)
+		if err != nil {
+			log.Printf("Request failed for %s", cfg.url)
+		} else {
+			
+			status := resp.StatusCode
 
-		status := resp.StatusCode
+			rt := time.Since(start).Milliseconds()
+			
+			log.Printf("\t code %d \t %d ms \t %s", status, rt, cfg.url)
 
-		rt := time.Since(start).Milliseconds()
-
-		body, _ := io.ReadAll(resp.Body)
-
-		isRegexpMatch := false
-
-		if cfg.regexp != "" {
-			r, err := regexp.Compile(cfg.regexp)
-			if err != nil {
-				// log err message
-			} else {
-				isRegexpMatch = r.Match(body)
+			body, _ := io.ReadAll(resp.Body)
+	
+			isRegexpMatch := false
+	
+			if cfg.regexp != "" {
+				r, err := regexp.Compile(cfg.regexp)
+				if err != nil {
+					log.Printf("Compile regexp failed for", cfg.url)
+				} else {
+					isRegexpMatch = r.Match(body)
+				}
 			}
+	
+			response := response{
+				ts:     ts.String(),
+				url:    cfg.url,
+				status: status,
+				rt:     rt,
+				regexp: isRegexpMatch,
+			}
+			ch <- response
 		}
-
-		response := response{
-			ts:     ts.String(),
-			url:    cfg.url,
-			status: status,
-			rt:     rt,
-			regexp: isRegexpMatch,
-		}
-		ch <- response
+		
 	}
 
 }
