@@ -181,7 +181,7 @@ func (s MonitoringService) MakeRequest(cfg urlConfiguration, ch chan<- response)
 			if cfg.regexp != "" {
 				r, err := regexp.Compile(cfg.regexp)
 				if err != nil {
-					log.Printf("Compile regexp failed for", cfg.url)
+					log.Printf("Compile regexp failed for %v", cfg.url)
 				} else {
 					isRegexpMatch = r.Match(body)
 				}
